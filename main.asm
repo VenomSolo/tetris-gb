@@ -19,24 +19,70 @@ ENDR
 SECTION "Game Code", ROM0
 	
 Start:
-	; Turn off LCD
-	call EnableLCD
-	ld a,[rLCDC]
-	set 5,a 
-	set 1,a 
-	ld [rLCDC],a
+.waitVBlank
+	ld a, [rLY]
+	cp 144
+	jr c, .waitVBlank
+
 	xor a
-	ld [POS], a
-	call SingleWaitVBlank
-	ld a, %11100100
+	ld [rLCDC], a
+	
+	ld hl, $8800
+	ld de, Tiles
+	ld bc, TilesEnd-Tiles
+.prepareTiles
+	ld a, [de]
+	ld [hl], a
+	inc hl
+	inc de
+	dec bc
+	ld a, b
+	or c
+	jr nz, .prepareTiles
+	
+	; Init display registers
+    ld a, %11100100
     ld [rBGP], a
-    xor a 
+
+    xor a ; ld a, 0
     ld [rSCY], a
     ld [rSCX], a
+
+    ; Shut sound down
     ld [rNR52], a
-	call WaitVBlank
-	
-	
+
+    ; Turn screen on, display background
+    ld a, %10000001
+    ld [rLCDC], a
 .lockup
-	jr .lockup
+    jr .lockup
 	
+SECTION "Tiles", ROM0
+
+Tiles:
+	; 1
+	dw %1111111111111111
+REPT 6
+	dw %1111111110000001
+ENDR
+	dw %1111111111111111
+	; 2
+	dw %1111111111111111
+	dw %1000000111111111
+	dw %1000000111111111
+	dw %1001100111111111
+	dw %1001100111111111
+	dw %1000000111111111
+	dw %1000000111111111
+	dw %1111111111111111
+	; 3
+	dw %1111111111111111
+	dw %1000000111111111
+	dw %1011110111111111
+	dw %1010010111100111
+	dw %1010010111100111
+	dw %1011110111111111
+	dw %1000000111111111
+	dw %1111111111111111
+	
+TilesEnd:
