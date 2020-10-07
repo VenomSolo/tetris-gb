@@ -40,8 +40,23 @@ Start:
 	or c
 	jr nz, .prepareTiles
 	
+	;ld hl, $9800
+	;ld a, 128
+	;ld [hl], a
+.renderOnePiece
+	ld a, 32
+	ld hl, $FE00
+	ld [hli], a
+	ld a, 16
+	ld [hli], a
+	ld a, 128
+	ld [hli], a
+	ld a, 0
+	ld [hli], a
+	
 	; Init display registers
     ld a, %11100100
+	ld [rOBP0], a
     ld [rBGP], a
 
     xor a ; ld a, 0
@@ -52,7 +67,7 @@ Start:
     ld [rNR52], a
 
     ; Turn screen on, display background
-    ld a, %10000001
+    ld a, %10000011
     ld [rLCDC], a
 .lockup
     jr .lockup
