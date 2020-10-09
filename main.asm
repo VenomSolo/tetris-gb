@@ -9,7 +9,6 @@ H_JOYNEW EQU $fffA
 SECTION "Header", ROM0[$100] ;
 
 EntryPoint:	
-	di 
 	jp Start 
 	
 REPT $150 - $104
@@ -66,11 +65,37 @@ Start:
     ; Shut sound down
     ld [rNR52], a
 
+	call .prepareTimer
     ; Turn screen on, display background
     ld a, %10000011
     ld [rLCDC], a
 .lockup
     jr .lockup
+	
+.prepareTimer
+	ld hl, $FF07 ; timer TAC
+	ld a, %00000100
+	ld [hl], a
+	ld a, .update
+	ld hl, $0050
+	ld [hl], a
+	ret
+	
+.update
+	ld a, [rLY]
+	cp 144
+	jr c, .update
+	ld hl, $FE01
+	ld a, [hl]
+	inc a
+	ld [hl], a
+	call .lockup
+	
+.waitVBlankOnce
+	ld a, [rLY]
+	cp 144
+	jr c, .waitVBlank
+	ret
 	
 SECTION "Tiles", ROM0
 
