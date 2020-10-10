@@ -1,42 +1,26 @@
 INCLUDE "hardware.inc"
-POS EQU $FFA0
-OPOS EQU $FFA1
 H_JOY EQU $fff8
 H_JOYOLD EQU $fff9
 H_JOYNEW EQU $fffA
+FRAMES_PER_TICK EQU 255
+FRAMES_COUNT EQU $ffa0
 
 
 SECTION "Header", ROM0[$100] ;
 
 EntryPoint:	
-	ei
+	di
 	jp Start 
 	
 REPT $150 - $104
 	db 0
 ENDR
 
-SECTION "Interrupts", ROM0[$A0]
-
-TimerInterrupt:
-.update
-	ld a, [rLY]
-	cp 144
-	jr c, .update
-	ld hl, $FE01
-	ld a, [hl]
-	inc a
-	ld [hl], a
-	ei
-	call .lockup
-	
-.lockup
-    jr .lockup
-
-
 SECTION "Game Code", ROM0[$200]
 	
 Start:
+	xor a
+	ld [FRAMES_COUNT], a
 .waitVBlank
 	ld a, [rLY]
 	cp 144
@@ -84,11 +68,31 @@ Start:
     ; Shut sound down
     ld [rNR52], a
 
-	call .prepareTimer
+	;call .prepareTimer
     ; Turn screen on, display background
     ld a, %10000011
     ld [rLCDC], a
+	
+.update
+	ld a, [rLY]
+	cp 144
+	jr c, .update
+	ld hl, FRAMES_COUNT
+	ld a, [hl]
+	inc a
+	ld [hl], a
+	cp FRAMES_PER_TICK
+	jr c, .lockup
+	xor a
+	ld [hl], a
+	ld hl, $FE01
+	ld a, [hl]
+	inc a
+	ld [hl], a	
 .lockup
+	ld a, [rLY]
+	cp 153
+	jr c, .update
     jr .lockup
 	
 .prepareTimer
@@ -103,15 +107,7 @@ Start:
 	ld [hl], a
 	ret
 	
-.update
-	ld a, [rLY]
-	cp 144
-	jr c, .update
-	ld hl, $FE01
-	ld a, [hl]
-	inc a
-	ld [hl], a
-	call .lockup
+
 	
 .waitVBlankOnce
 	ld a, [rLY]
