@@ -9,13 +9,32 @@ H_JOYNEW EQU $fffA
 SECTION "Header", ROM0[$100] ;
 
 EntryPoint:	
+	ei
 	jp Start 
 	
 REPT $150 - $104
 	db 0
 ENDR
 
-SECTION "Game Code", ROM0
+SECTION "Interrupts", ROM0[$A0]
+
+TimerInterrupt:
+.update
+	ld a, [rLY]
+	cp 144
+	jr c, .update
+	ld hl, $FE01
+	ld a, [hl]
+	inc a
+	ld [hl], a
+	ei
+	call .lockup
+	
+.lockup
+    jr .lockup
+
+
+SECTION "Game Code", ROM0[$200]
 	
 Start:
 .waitVBlank
@@ -73,10 +92,13 @@ Start:
     jr .lockup
 	
 .prepareTimer
+	ld hl, $FFFF
+	ld a, %00000100
+	ld [hl], a
 	ld hl, $FF07 ; timer TAC
 	ld a, %00000100
 	ld [hl], a
-	ld a, .update
+	ld a, $A0
 	ld hl, $0050
 	ld [hl], a
 	ret
