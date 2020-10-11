@@ -4,6 +4,7 @@ H_JOYOLD EQU $fff9
 H_JOYNEW EQU $fffA
 FRAMES_PER_TICK EQU 255
 FRAMES_COUNT EQU $ffa0
+NEXT_BLOCK EQU $C100
 
 
 SECTION "Header", ROM0[$100] ;
@@ -74,21 +75,24 @@ Start:
     ld [rLCDC], a
 	
 .update
-	ld a, [rLY]
-	cp 144
-	jr c, .update
-	ld hl, FRAMES_COUNT
+	ld a, [rLY] ;sprawdzamy linie
+	cp 144 ; porównujemy z 144
+	jr c, .update	;jeśli jest mniejsza, powtarzamy
+	;call .waitVBlankOnce
+	ld hl, FRAMES_COUNT ;bierzemy liczbę "klatek"
+	ld a, [hl] ;i wsadzamy ją do A
+	inc a	;inkrementujemy
+	ld [hl], a	;i wsadzamy z powrotem na swoje miejsce
+	cp FRAMES_PER_TICK ;porównujemy z naszym ogarnicznikiem
+	jr c, .lockup ;jeśli jest mniesza, to czekamy kolejną klatkę
+	xor a ;jeśli nie - zerujemy
+	ld [hl], a ;i zapisujemy to 0 w pamieci
+	ld hl, $FE00
 	ld a, [hl]
-	inc a
-	ld [hl], a
-	cp FRAMES_PER_TICK
-	jr c, .lockup
-	xor a
-	ld [hl], a
-	ld hl, $FE01
-	ld a, [hl]
+	;add a, 8
 	inc a
 	ld [hl], a	
+	call .randomBlock ;wywołujemy randomBlock
 .lockup
 	ld a, [rLY]
 	cp 153
@@ -114,6 +118,15 @@ Start:
 	cp 144
 	jr c, .waitVBlank
 	ret
+	
+.randomBlock
+	ld hl, NEXT_BLOCK
+	ld a, [rDIV]
+	and %00000111
+	jr z, .randomBlock
+	ld [hl], a
+	ret
+	
 	
 SECTION "Tiles", ROM0
 
