@@ -57,6 +57,33 @@ Start:
 	ld a, 0
 	ld [hli], a
 	
+	ld a, 40
+	ld [hli], a
+	ld a, 8
+	ld [hli], a
+	ld a, 128
+	ld [hli], a
+	ld a, 0
+	ld [hli], a
+	
+	ld a, 40
+	ld [hli], a
+	ld a, 16
+	ld [hli], a
+	ld a, 128
+	ld [hli], a
+	ld a, 0
+	ld [hli], a
+	
+	ld a, 40
+	ld [hli], a
+	ld a, 24
+	ld [hli], a
+	ld a, 128
+	ld [hli], a
+	ld a, 0
+	ld [hli], a
+	
 	; Init display registers
     ld a, %11100100
 	ld [rOBP0], a
@@ -116,7 +143,7 @@ Start:
 .waitVBlankOnce
 	ld a, [rLY]
 	cp 144
-	jr c, .waitVBlank
+	jr c, .waitVBlankOnce
 	ret
 	
 .randomBlock
