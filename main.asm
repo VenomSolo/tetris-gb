@@ -115,10 +115,17 @@ Start:
 	xor a ;jeśli nie - zerujemy
 	ld [hl], a ;i zapisujemy to 0 w pamieci
 	ld hl, $FE00
+	ld b, 4
+.letTheBlocksFall
 	ld a, [hl]
 	;add a, 8
 	inc a
 	ld [hl], a	
+	ld a, l
+	add a, 4
+	ld l, a
+	dec b
+	jr nz, .letTheBlocksFall
 	call .randomBlock ;wywołujemy randomBlock
 .lockup
 	ld a, [rLY]
