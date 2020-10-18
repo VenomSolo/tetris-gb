@@ -5,6 +5,10 @@ H_JOYNEW EQU $fffA
 FRAMES_PER_TICK EQU 255
 FRAMES_COUNT EQU $ffa0
 NEXT_BLOCK EQU $C100
+CURRENT_BLOCK EQU $C101
+BLOCK_X EQU $C102
+BLOCK_Y EQU $C103
+BLOCK_ROT EQU $C104
 
 
 SECTION "Header", ROM0[$100] ;
@@ -47,42 +51,12 @@ Start:
 	;ld a, 128
 	;ld [hl], a
 .renderOnePiece
-	ld a, 32
-	ld hl, $FE00
-	ld [hli], a
-	ld a, 16
-	ld [hli], a
-	ld a, 128
-	ld [hli], a
-	ld a, 0
-	ld [hli], a
-	
-	ld a, 40
-	ld [hli], a
-	ld a, 8
-	ld [hli], a
-	ld a, 128
-	ld [hli], a
-	ld a, 0
-	ld [hli], a
-	
-	ld a, 40
-	ld [hli], a
-	ld a, 16
-	ld [hli], a
-	ld a, 128
-	ld [hli], a
-	ld a, 0
-	ld [hli], a
-	
-	ld a, 40
-	ld [hli], a
-	ld a, 24
-	ld [hli], a
-	ld a, 128
-	ld [hli], a
-	ld a, 0
-	ld [hli], a
+	ld a, 64
+	ld [BLOCK_X], a
+	ld [BLOCK_Y], a
+	ld a, 1
+	ld [CURRENT_BLOCK], a
+	call .renderTetromino
 	
 	; Init display registers
     ld a, %11100100
@@ -161,6 +135,100 @@ Start:
 	ld [hl], a
 	ret
 	
+.renderTetromino
+	ld de, $FE00
+	ld a, [CURRENT_BLOCK]
+	add a
+	ld hl, Blocks
+	ld c, a
+	ld b, 0
+	add hl, bc
+	ld a, [hli]
+	and 128
+	jr z, .assign0
+.assignMiddle
+	ld b, 8
+	ld c, 8
+	call .setPiece
+.assign0
+	;ld b, [hl] ;Tu trzeba bedzie dodac rotacje
+	ld a, %10000000
+	and b
+	jr z, .assign1
+	ld b, 0
+	ld c, 0
+	call .setPiece
+.assign1
+	ld a, %01000000
+	and b
+	jr z, .assign2
+	ld b, 0
+	ld c, 8
+	call .setPiece
+.assign2
+	ld a, %00100000
+	and b
+	jr z, .assign3
+	ld b, 0
+	ld c, 16
+	call .setPiece
+.assign3
+	ld a, %00010000
+	and b
+	jr z, .assign4
+	ld b, 8
+	ld c, 16
+	call .setPiece
+.assign4
+	ld a, %00001000
+	and b
+	jr z, .assign5
+	ld b, 16
+	ld c, 16
+	call .setPiece
+.assign5
+	ld a, %00000100
+	and b
+	jr z, .assign6
+	ld b, 16
+	ld c, 8
+	call .setPiece
+.assign6
+	ld a, %00000010
+	and b
+	jr z, .assign7
+	ld b, 16
+	ld c, 0
+	call .setPiece
+.assign7
+	ld a, %00000001
+	and b
+	jr z, .return
+	ld b, 8
+	ld c, 0
+	call .setPiece
+.return
+	ret
+	
+.setPiece; B - offset Y, C - offset X
+	ld a, [BLOCK_Y]
+	add b
+	ld [de], a
+	inc e
+	ld a, [BLOCK_X]
+	add c
+	ld [de], a
+	inc e
+	ld a, [CURRENT_BLOCK]
+	add 128
+	ld [de], a
+	inc e
+	xor a
+	ld [de], a
+	inc e	;Pomijamy 4 bajt sprite'u
+	ld b, [hl] ;Tu trzeba bedzie dodac rotacje?
+	ret
+	
 	
 SECTION "Tiles", ROM0
 
@@ -191,3 +259,16 @@ ENDR
 	dw %1111111111111111
 	
 TilesEnd:
+
+SECTION "Tetromino", ROM0
+
+Blocks:
+	;I
+	;O
+	;L
+	db %10000000
+	db %00110001
+	;R
+	db %10000000
+	db %10010001
+	
