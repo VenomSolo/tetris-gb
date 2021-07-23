@@ -4,19 +4,12 @@ INCLUDE "hardware.inc"
 SECTION "Tetromino", ROM0[$3000]
 
 Blocks:
-	;I
-	;O
 	;L
 	db %10000000
 	db %00110001
 	;R
 	db %10000000
 	db %10010001
-	; first byte - indicates middle field / being an I
-	; second byte - block layout
-	; 7 0 1
-	; 6 x 2
-	; 5 4 3
 	;Z
 	db %10000000
 	db %11010000
@@ -24,7 +17,20 @@ Blocks:
 	db %10000000
 	db %01100001
 	;
-	;
+	;O
+	db %10000000
+	db %00011100
+	;T
+	db %10000000
+	db %11100000
+	;I
+	db %00000000
+	db %11100000
+	; first byte - indicates middle field / being an I
+	; second byte - block layout
+	; 7 0 1
+	; 6 x 2
+	; 5 4 3
 	
 ;LocalOAM::
 ;REPT 16
@@ -40,8 +46,9 @@ InitTetromino::
 .randomBlock
 	ld hl, NEXT_BLOCK
 	ld a, [rDIV] ; divider register
-	and %00000011 ; 
-	;jr z, .randomBlock
+	and %00000111 ; 
+	jr z, .randomBlock
+	dec a
 	ld [hl], a
 	;
 	xor a
@@ -56,9 +63,18 @@ InitTetromino::
 	ld [BLOCK_Y_POS], a
 	ld a, [NEXT_BLOCK]
 	ld [CURRENT_BLOCK], a
-	call CopyToNew
+	;call CopyToNew
 	;call .waitUntilNextVBlank
+	call CheckCollision
+	ld a, [BLOCK_Y_POS_NEW] 
+	cp 1 ; if it collided at the init
+	jr nz, .yeet
 	call CalculateTetromino
+	ret
+.yeet
+	;don't want to write it so just turn screen the fuck down
+	xor a
+	ld [rLCDC], a
 	ret
 
 	
@@ -585,6 +601,11 @@ RotateRight::
 	ret
 	
 RotateLeft::
+	call Fall
+	call Fall
+	call Fall
+	call Fall
+	ret
 	ld a, [BLOCK_ROT]
 	cp 0
 	jr z, .underflow

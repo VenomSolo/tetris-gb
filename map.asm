@@ -3,7 +3,7 @@ INCLUDE "hardware.inc"
 
 SECTION "Map", ROM0[$3800]
 
-WALL EQU $84
+WALL EQU $87
 
 Map:
 REPT 18
@@ -45,7 +45,10 @@ InitMap::
 	jr nz, .loop
 	ret
 	
-ClearRows::
+ClearRows:: ; don't know why the fuck there are carries here
+			; if I need only 180 entries but ok
+	xor a
+	ld [ROWS_TO_DELETE], a
 	ld hl, MAP
 	ld b, 19 ; dec doesn't change carry flag :/
 .scanrow
@@ -53,7 +56,7 @@ ClearRows::
 	ld d, h
 	ld e, l
 	dec b
-	jr z, .return
+	jr z, .additionalcheck
 	ld c, 10
 .scannigloop
 	ld a, [hl]
@@ -64,6 +67,10 @@ ClearRows::
 	jr nz, .scannigloop
 .eraserow
 	ld c, 10
+	;count cleared rows
+	ld a, [ROWS_TO_DELETE]
+	inc a
+	ld [ROWS_TO_DELETE], a
 	;rewind to start of row
 	ld h, d
 	ld l, e
@@ -75,7 +82,7 @@ ClearRows::
 .stoperase
 	jr .scanrow
 .stopscan
-	; add 10 with carry to bc
+	; add 10 with carry to de
 	ld a, e
 	add a, 10
 	ld e, a
@@ -85,10 +92,41 @@ ClearRows::
 	; set hl to start of the next row
 	ld h, d
 	ld l, e
+	; check if there was cleared row below
+	ld a, [ROWS_TO_DELETE]
+	cp 0
+	jr nz, .fall ; if there were, just let rows fall and return
 	jr .scanrow
+.fall
+	;de and hl points at the exact 
+	;same segment - first in the next row
+	;rewind them to the end of last row
+	dec hl
+	dec de
+	;rewind hl ROWS_TO_DELETE rows up
+	ld a, [ROWS_TO_DELETE]
+	ld b, a
+.rewindloop
+	ld a, l
+	sub a, 10
+	ld l, a
+	dec b
+	jr nz, .rewindloop
+.replaceloop
+	ld a, [hl]
+	ld [de], a
+	dec e
+	dec l 
+	jr nz, .replaceloop ; this won't check first segment
+						; but we don't need first row anyway
+	jr .return
+.additionalcheck
+	ld a, [ROWS_TO_DELETE]
+	cp 0
+	jr nz, .fall ; if there were, just let rows fall and return
 .return
 	ret
-	
+
 	
 	
 	
@@ -110,7 +148,7 @@ CopyMapToVRAM::
 	jr nz, .loop
 .nextRow
 	ld a, [rLY]
-	cp 152 ; if it's dangerously enough end of VBlank, just wait for another
+	cp 152 ; if it's dangerously close to end of VBlank, just wait for another
 	jr nc, .nowait
 	call WaitVBlank
 .nowait
